@@ -1,14 +1,14 @@
+import express from "express";
 import fetch from "node-fetch";
 
-export default async function handler(req, res) {
-  const { porta, path } = req.query;
+const app = express();
+const TARGET_IP = "45.140.193.48";
 
-  if (!porta) {
-    res.status(400).send("Porta não especificada");
-    return;
-  }
+app.use(express.raw({ type: "*/*" })); // Para aceitar qualquer payload
 
-  const url = `http://45.140.193.48:${porta}/${path || ""}`;
+app.all("/:porta/:path*", async (req, res) => {
+  const { porta, path } = req.params;
+  const url = `http://${TARGET_IP}:${porta}/${path || ""}`;
 
   try {
     const response = await fetch(url, {
@@ -24,4 +24,14 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(500).send("Erro no proxy: " + err.message);
   }
-}
+});
+
+app.get("/", (req, res) => {
+  res.redirect(`http://${TARGET_IP}:80`);
+});
+
+// Mantém o servidor escutando
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Proxy ativo na porta ${PORT}`);
+});
