@@ -1,18 +1,13 @@
 {
-  "name": "proxy-ssh-ws",
+  "name": "proxy_ssh_ws",
   "version": "1.0.0",
-  "description": "Proxy reverso compatível com SSH e V2Ray (WebSocket)",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "http-proxy-middleware": "^2.0.6"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "author": "Jose Josue Tiago",
-  "license": "MIT"
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^3.0.0"
+  }
 }
