@@ -1,7 +1,7 @@
 {
   "name": "koyeb-proxy",
   "version": "1.0.0",
-  "description": "Proxy para redirecionar tráfego para a minha máquina",
+  "description": "Proxy para redirecionar tráfego para minha máquina",
   "main": "api/proxy.js",
   "type": "module",
   "scripts": {
