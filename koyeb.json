@@ -1,13 +1,12 @@
 {
-  "name": "koyeb-proxy",
-  "version": "1.0.0",
-  "description": "Proxy para redirecionar tráfego para a minha máquina",
-  "main": "api/proxy.js",
-  "type": "module",
-  "scripts": {
-    "start": "node api/proxy.js"
-  },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  }
+  "rewrites": [
+    {
+      "source": "/:porta/:path*",
+      "destination": "/api/proxy?porta=:porta&path=:path*"
+    },
+    {
+      "source": "/",
+      "destination": "http://45.140.193.48:80"
+    }
+  ]
 }
