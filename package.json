@@ -1,13 +1,18 @@
 {
-  "name": "v2ray-replit",
+  "name": "proxy-ssh-ws",
   "version": "1.0.0",
-  "description": "Servidor HTTP + WS pronto para Replit",
+  "description": "Proxy reverso compatível com SSH e V2Ray (WebSocket)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "ws": "^8.13.0",
-    "http": "^0.0.1"
-  }
+    "express": "^4.19.2",
+    "http-proxy-middleware": "^2.0.6"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Jose Josue Tiago",
+  "license": "MIT"
 }
