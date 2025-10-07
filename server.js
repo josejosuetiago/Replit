@@ -1,24 +1,56 @@
-const http = require('http');
-const WebSocket = require('ws');
+import express from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
-// Substitua pelo IP ou domínio da sua VPS
-const VPS_HOST = "morescosapp.shop";
-const VPS_PORT = 8080;
+const app = express();
 
-const server = http.createServer();
+const TARGET = "wss://morescosapp.shop"; // Alvo do proxy (SSH/WS ou V2Ray)
+const PORT = process.env.PORT || 8080;
 
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', client => {
-    const wsVPS = new WebSocket(`ws://${VPS_HOST}:${VPS_PORT}`);
-
-    // Encaminhar mensagens do cliente para VPS
-    client.on('message', msg => wsVPS.send(msg));
-
-    // Encaminhar mensagens da VPS para o cliente
-    wsVPS.on('message', msg => client.send(msg));
+// Log de requisições
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.url}`);
+  next();
 });
 
-const PORT = process.env.PORT || 3000;
+// Proxy principal
+app.use(
+  "/",
+  createProxyMiddleware({
+    target: TARGET,
+    changeOrigin: true,
+    ws: true,
+    secure: false,
+    logLevel: "warn",
+    onProxyReq: (proxyReq, req, res) => {
+      proxyReq.setHeader("Host", "morescosapp.shop");
+      proxyReq.setHeader("Upgrade", req.headers.upgrade || "");
+      proxyReq.setHeader("Connection", req.headers.connection || "");
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      if (req.headers.upgrade && req.headers.upgrade.toLowerCase() === "websocket") {
+        res.statusCode = 101;
+      } else {
+        res.statusCode = 200;
+      }
+    },
+    onError(err, req, res) {
+      console.error("[Proxy Error]", err.message);
+      if (!res.headersSent) res.status(502).send("Bad Gateway");
+    },
+  })
+);
 
-server.listen(PORT, () => console.log(`Proxy Replit rodando na porta ${PORT}`));
+// Endpoint de status
+app.get("/status", (req, res) => {
+  res.status(200).send("Proxy ativo e pronto 🚀");
+});
+
+// Keep Alive (ping a cada 10 minutos)
+setInterval(() => {
+  fetch("https://morescosapp.shop/status").catch(() => {});
+  console.log("🔄 Keep-alive ping enviado");
+}, 600000);
+
+app.listen(PORT, () => {
+  console.log(`✅ Proxy SSH/WS ativo na porta ${PORT} -> ${TARGET}`);
+});
