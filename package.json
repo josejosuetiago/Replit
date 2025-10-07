@@ -1,0 +1,13 @@
+{
+  "name": "v2ray-replit",
+  "version": "1.0.0",
+  "description": "Servidor HTTP + WS pronto para Replit",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.13.0",
+    "http": "^0.0.1"
+  }
+}
