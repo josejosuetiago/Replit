@@ -8,7 +8,7 @@ const TARGET_IP = "45.140.193.48"; // sua máquina
 const DEFAULT_PORT = "80"; // porta padrão
 
 // Proxy dinâmico: /porta/qualquer/coisa
-app.all("/:porta/:path(*)", async (req, res) => {
+app.all('/:porta/*', async (req, res) => {
   const porta = req.params.porta || DEFAULT_PORT;
   const path = req.params.path || "";
   const url = `http://${TARGET_IP}:${porta}/${path}`;
