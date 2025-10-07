@@ -4,52 +4,45 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
 
-var TargetAddr = "127.0.0.1"
+var TargetAddr = "45.140.193.48" // IP da sua máquina com Xray
 
 const (
 	ServerAddr       = "0.0.0.0"
-	ServerPort       = "8080"
-	TargetPortSSH    = "22"
-	TargetPortV2Ray  = "8080"
-	BufferSize       = 524288
+	ServerPort       = "8080"       // Porta que o contêiner vai expor
+	TargetPort       = "80"         // Porta do Xray na sua máquina
+	BufferSize       = 524288       // 512 KB
 	KeepAliveTimeout = 24 * time.Hour
 )
 
 type Target struct {
 	Addr  string
 	Port  string
-	V2Ray bool
 }
 
-func createTarget(endpoint string) *Target {
-	if endpoint == "/ws/" {
-		return &Target{Addr: TargetAddr, Port: TargetPortV2Ray, V2Ray: true}
-	}
-	return &Target{Addr: TargetAddr, Port: TargetPortSSH, V2Ray: false}
+func createTarget() *Target {
+	return &Target{Addr: TargetAddr, Port: TargetPort}
 }
 
-func copyStream(src, dst net.Conn, wg *sync.WaitGroup, direction string) {
+func copyStream(src, dst net.Conn, wg *sync.WaitGroup) {
 	defer wg.Done()
 	buffer := make([]byte, BufferSize)
 	for {
 		n, err := src.Read(buffer)
 		if err != nil {
 			if err != io.EOF {
-				fmt.Printf("[ERROR] %s: %v\n", direction, err)
+				fmt.Printf("[ERROR] Erro ao transferir dados: %v\n", err)
 			}
 			break
 		}
 		if n > 0 {
 			_, err := dst.Write(buffer[:n])
 			if err != nil {
-				fmt.Printf("[ERROR] %s write: %v\n", direction, err)
+				fmt.Printf("[ERROR] Erro ao escrever dados: %v\n", err)
 				break
 			}
 		}
@@ -69,66 +62,44 @@ func keepAlive(conns ...net.Conn) {
 
 func handleClient(client net.Conn) {
 	defer client.Close()
+
 	clientAddr := client.RemoteAddr().String()
 	fmt.Printf("[INFO] Cliente conectado: %s\n", clientAddr)
 
-	buffer := make([]byte, BufferSize)
-	size, err := client.Read(buffer)
-	if err != nil {
-		fmt.Printf("[ERROR] Ler do cliente %s: %v\n", clientAddr, err)
-		return
-	}
-
-	payload := string(buffer[:size])
-	endpoint := strings.Split(payload, " ")[1]
-	target := createTarget(endpoint)
-
+	target := createTarget()
 	targetConn, err := net.Dial("tcp", net.JoinHostPort(target.Addr, target.Port))
 	if err != nil {
-		fmt.Printf("[ERROR] Conectar alvo %s:%s: %v\n", target.Addr, target.Port, err)
+		fmt.Printf("[ERROR] Falha ao conectar no alvo (%s:%s): %v\n", target.Addr, target.Port, err)
 		return
 	}
 	defer targetConn.Close()
 
-	if target.V2Ray {
-		targetConn.Write(buffer[:size])
-	} else {
-		client.Write([]byte("HTTP/1.1 101 Switching Protocols\r\nUpgrade: Websocket\r\nConnection: Upgrade\r\n\r\n"))
-	}
-
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go copyStream(client, targetConn, &wg, "Cliente->Alvo")
-	go copyStream(targetConn, client, &wg, "Alvo->Cliente")
+
+	go copyStream(client, targetConn, &wg)
+	go copyStream(targetConn, client, &wg)
 	go keepAlive(client, targetConn)
+
 	wg.Wait()
 	fmt.Printf("[INFO] Conexão encerrada: %s\n", clientAddr)
 }
 
 func main() {
-	go func() {
-		// Health check HTTP para Koyeb
-		http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(200)
-			w.Write([]byte("OK 🚀"))
-		})
-		http.ListenAndServe(":8081", nil) // Porta HTTP para health check
-	}()
-
 	serverAddr := net.JoinHostPort(ServerAddr, ServerPort)
 	listener, err := net.Listen("tcp", serverAddr)
 	if err != nil {
-		fmt.Printf("[FATAL] Falha ao iniciar servidor: %v\n", err)
+		fmt.Printf("[FATAL] Falha ao iniciar o servidor: %v\n", err)
 		os.Exit(1)
 	}
 	defer listener.Close()
 
-	fmt.Printf("[INFO] Servidor TCP escutando em %s\n", serverAddr)
+	fmt.Printf("[INFO] Servidor escutando em %s, encaminhando para %s:%s\n", serverAddr, TargetAddr, TargetPort)
 
 	for {
 		client, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("[ERROR] Aceitar conexão: %v\n", err)
+			fmt.Printf("[ERROR] Falha ao aceitar conexão: %v\n", err)
 			continue
 		}
 		go handleClient(client)
