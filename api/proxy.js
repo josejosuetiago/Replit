@@ -1,47 +1,30 @@
 import express from "express";
-import fetch from "node-fetch";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 const app = express();
-app.use(express.raw({ type: "*/*", limit: "50mb" }));
 
-const TARGET_IP = "45.140.193.48"; // sua máquina
-const DEFAULT_PORT = "80"; // porta padrão
+// IP e porta da sua máquina (VPS)
+const target = "http://45.140.193.48:80";
 
-// Proxy dinâmico: /porta/qualquer/coisa
-app.all('/:porta/:path(*)?', async (req, res) => {
-  const porta = req.params.porta || DEFAULT_PORT;
-  const path = req.params.path || "";
-  const url = `http://${TARGET_IP}:${porta}/${path}`;
+// Cria o proxy fixo
+app.use(
+  "/",
+  createProxyMiddleware({
+    target,
+    changeOrigin: true,
+    ws: true,
+    onProxyReq: (proxyReq, req, res) => {
+      proxyReq.setHeader("X-Forwarded-For", req.ip);
+    },
+    onError: (err, req, res) => {
+      console.error("Erro no proxy:", err.message);
+      res.status(502).send("Erro ao conectar ao servidor de destino");
+    }
+  })
+);
 
-  try {
-    const response = await fetch(url, {
-      method: req.method,
-      headers: req.headers,
-      body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
-    });
-
-    const data = await response.arrayBuffer();
-    response.headers.forEach((v, k) => res.setHeader(k, v));
-    res.status(response.status).send(Buffer.from(data));
-  } catch (err) {
-    res.status(500).send("Erro no proxy: " + err.message);
-  }
-});
-
-// Proxy raiz
-app.all("/", async (req, res) => {
-  const url = `http://${TARGET_IP}:${DEFAULT_PORT}`;
-  try {
-    const response = await fetch(url, { method: req.method, headers: req.headers });
-    const data = await response.arrayBuffer();
-    response.headers.forEach((v, k) => res.setHeader(k, v));
-    res.status(response.status).send(Buffer.from(data));
-  } catch (err) {
-    res.status(500).send("Erro no proxy: " + err.message);
-  }
-});
-
+// Inicia o servidor
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`[INFO] Proxy ativo na porta ${PORT}, redirecionando para ${TARGET_IP}:${DEFAULT_PORT}`);
+  console.log(`Proxy rodando na porta ${PORT} -> ${target}`);
 });
