@@ -1,14 +1,11 @@
 {
   "name": "koyeb-proxy",
   "version": "1.0.0",
-  "description": "Proxy fixo para VPS",
-  "main": "api/proxy.js",
-  "type": "module",
-  "scripts": {
-    "start": "node api/proxy.js"
-  },
+  "main": "server.js",
   "dependencies": {
-    "express": "^4.21.2",
-    "http-proxy-middleware": "^2.0.6"
+    "ws": "^8.16.0"
+  },
+  "scripts": {
+    "start": "node server.js"
   }
 }
