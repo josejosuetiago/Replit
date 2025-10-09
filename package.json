@@ -1,11 +1,13 @@
 {
-  "name": "koyeb-proxy",
+  "name": "xray-proxy-docker",
   "version": "1.0.0",
-  "main": "server.js",
-  "dependencies": {
-    "ws": "^8.16.0"
-  },
+  "description": "Proxy reverso estilo Vercel para redirecionar tráfego (Xray e SSH)",
+  "main": "api/proxy.js",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/proxy.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
   }
 }
