@@ -1,18 +1,17 @@
-# Usa Node.js 18
-FROM node:18
+# Usa Node.js oficial
+FROM node:20-alpine
 
-# Cria diretório da aplicação
+# Cria diretório
 WORKDIR /app
 
-# Copia arquivos
-COPY package.json .
-COPY server.js .
-
-# Instala dependências
+# Copia os arquivos
+COPY package.json ./
 RUN npm install
 
-# Expõe porta padrão
+COPY api ./api
+
+# Porta padrão do container
 EXPOSE 8080
 
-# Inicia o app
-CMD ["node", "server.js"]
+# Comando de inicialização
+CMD ["npm", "start"]
