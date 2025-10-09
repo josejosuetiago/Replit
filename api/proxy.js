@@ -1,8 +1,8 @@
-import http from "http";
+  import http from "http";
 import net from "net";
 import url from "url";
 
-// IP da tua máquina (com Xray)
+// IP da tua máquina com Xray
 const TARGET_HOST = "45.140.193.48";
 
 const server = http.createServer((req, res) => {
@@ -36,14 +36,12 @@ const server = http.createServer((req, res) => {
   });
 });
 
-// Suporte WebSocket (upgrade)
+// Suporte CONNECT (tunel SSH/HTTPS)
 server.on("connect", (req, clientSocket, head) => {
   const { port, hostname } = new URL(`http://${req.url}`);
 
   const serverSocket = net.connect(port || 80, hostname || TARGET_HOST, () => {
-    clientSocket.write(
-      "HTTP/1.1 200 Connection Established\r\n\r\n"
-    );
+    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
     serverSocket.write(head);
     serverSocket.pipe(clientSocket);
     clientSocket.pipe(serverSocket);
@@ -52,6 +50,7 @@ server.on("connect", (req, clientSocket, head) => {
   serverSocket.on("error", () => clientSocket.end());
 });
 
+// Suporte WebSocket (Upgrade)
 server.on("upgrade", (req, socket, head) => {
   const { pathname } = url.parse(req.url);
   const match = pathname.match(/^\/(\d+)(\/.*)?/);
@@ -68,5 +67,4 @@ server.on("upgrade", (req, socket, head) => {
 
 server.listen(8080, () => {
   console.log("✅ Proxy WebSocket/HTTP ativo na porta 8080");
-});");
 });
