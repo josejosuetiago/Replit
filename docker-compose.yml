@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  proxy:
+    build: .
+    container_name: xray-proxy
+    restart: always
+    ports:
+      - "8080:8080"
