@@ -2,8 +2,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const net = require('net');
 
-const TARGET_HOST = process.env.TARGET_HOST || '127.0.0.1';
-const SSH_PORT = process.env.SSH_PORT || 22;
+const TARGET_HOST = process.env.TARGET_HOST || '45.83.12.10';
+const SSH_PORT = process.env.SSH_PORT || 80;
 const XRAY_PORT = process.env.XRAY_PORT || 8080;
 
 const server = http.createServer((req, res) => {
